@@ -69,7 +69,7 @@ import {
   type DesktopHostRelay,
   type HostProbeResult,
 } from '@/lib/desktopHosts';
-import { createRelayTunnelClient } from '@/lib/relay/tunnel-client';
+import { createRelayTunnelClient, isRelayLimitReached } from '@/lib/relay/tunnel-client';
 import { getDesktopLanAddress, isDesktopLocalOriginActive, isDesktopShell } from '@/lib/desktop';
 import { useEnterprisePolicyStore } from '@/stores/useEnterprisePolicyStore';
 import { loadDesktopSettings } from '@/lib/persistence';
@@ -677,6 +677,7 @@ export const RemoteInstancesPage: React.FC = () => {
       | { kind: 'direct'; url: string; token: string }
       | { kind: 'relay'; relay: DesktopHostRelay; token: string }
       | null = null;
+    let relayLimited = false;
 
     for (const candidate of ordered) {
       if (candidate.type === 'relay') {
@@ -701,6 +702,7 @@ export const RemoteInstancesPage: React.FC = () => {
             break;
           }
         } catch {
+          relayLimited ||= isRelayLimitReached(tunnel.getStatus());
           // Relay unreachable / handshake failed — try the next candidate.
         } finally {
           tunnel.close();
@@ -724,7 +726,7 @@ export const RemoteInstancesPage: React.FC = () => {
     }
 
     if (!redeemed) {
-      setDirectError(pairingError || t('mobile.connect.error.unreachable'));
+      setDirectError(pairingError || t(relayLimited ? 'mobile.connect.error.relayLimit' : 'mobile.connect.error.unreachable'));
       return;
     }
 

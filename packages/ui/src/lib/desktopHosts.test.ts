@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { RelayTunnelStatus } from '@/lib/relay/tunnel-client';
+import { encodePairingConnectionPayload } from './connectionPayload';
 import type { DesktopHostRelay } from './desktopHosts';
 
 type TunnelStub = {
@@ -76,6 +77,37 @@ describe('resolveDesktopHostUrl', () => {
 describe('importDesktopHostPairing', () => {
   test('rejects malformed pairing links before changing hosts', async () => {
     await expect(importDesktopHostPairing('not-a-connect-link', [])).rejects.toThrow('invalid-connect-link');
+  });
+
+  test('reports a relay limit refusal before closing the pairing tunnel', async () => {
+    const link = encodePairingConnectionPayload({
+      v: 2,
+      pairingId: 'pair_relay_limit',
+      secret: 'secret',
+      candidates: [{
+        type: 'relay',
+        relayUrl: 'wss://relay.example/tunnel',
+        serverId: 'server-a',
+        hostEncPubJwk: { kty: 'EC', crv: 'P-256', x: 'x', y: 'y' },
+      }],
+    });
+    let status: RelayTunnelStatus = { state: 'error', terminal: true, closeCode: 4029 };
+    let closed = false;
+    nextTunnel = () => ({
+      fetch: async () => { throw new Error('relay connection limit reached'); },
+      getStatus: () => status,
+      close: () => {
+        closed = true;
+        status = { state: 'idle' };
+      },
+    });
+
+    try {
+      await expect(importDesktopHostPairing(link, [])).rejects.toThrow('pairing-relay-limit');
+      expect(closed).toBe(true);
+    } finally {
+      nextTunnel = null;
+    }
   });
 });
 

@@ -202,7 +202,9 @@ export function RemoteConnectionForm({
       setError(
         err instanceof Error && err.message === 'invalid-connect-link'
           ? t('settings.remoteInstances.direct.error.invalidConnectLink')
-          : t('onboarding.remoteConnection.errors.failedToSaveConnection'),
+          : err instanceof Error && err.message === 'pairing-relay-limit'
+            ? t('mobile.connect.error.relayLimit')
+            : t('onboarding.remoteConnection.errors.failedToSaveConnection'),
       );
       setState('error');
     }

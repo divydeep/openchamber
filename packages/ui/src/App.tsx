@@ -546,7 +546,9 @@ function App({ apis }: AppProps) {
           ? t('settings.remoteInstances.direct.error.invalidConnectLink')
           : failure === 'unreachable'
             ? t('mobile.connect.error.unreachable')
-            : t('onboarding.remoteConnection.errors.failedToSaveConnection'));
+            : failure === 'relay-limit'
+              ? t('mobile.connect.error.relayLimit')
+              : t('onboarding.remoteConnection.errors.failedToSaveConnection'));
       });
     };
     window.addEventListener('openchamber:host-actions-ready', run);

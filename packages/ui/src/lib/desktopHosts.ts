@@ -125,6 +125,7 @@ export const importDesktopHostPairing = async (
   };
 
   let redeemed: { directUrl?: string; relay?: DesktopHostRelay; token: string } | null = null;
+  let relayLimited = false;
   const candidates = [...payload.candidates].sort(
     (a, b) => (a.type === 'relay' ? 1 : 0) - (b.type === 'relay' ? 1 : 0),
   );
@@ -146,6 +147,7 @@ export const importDesktopHostPairing = async (
           break;
         }
       } catch {
+        relayLimited ||= isRelayLimitReached(tunnel.getStatus());
         // Try the next advertised transport.
       } finally {
         tunnel.close();
@@ -164,7 +166,7 @@ export const importDesktopHostPairing = async (
       // Try the next advertised transport.
     }
   }
-  if (!redeemed) throw new Error('pairing-redeem-failed');
+  if (!redeemed) throw new Error(relayLimited ? 'pairing-relay-limit' : 'pairing-redeem-failed');
 
   const relayCandidate = payload.candidates.find(
     (candidate): candidate is Extract<PairingEndpointCandidate, { type: 'relay' }> => candidate.type === 'relay',

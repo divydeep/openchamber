@@ -12,11 +12,12 @@ import { desktopHostsGet, desktopHostsSet, getDesktopHostApiUrl, importDesktopHo
 import { restoreDesktopRelayRuntime } from '@/lib/desktopRelayRestore';
 import { switchRuntimeEndpoint } from '@/lib/runtime-switch';
 
-type HostActionFailure = 'invalid-link' | 'unreachable' | 'failed';
+type HostActionFailure = 'invalid-link' | 'unreachable' | 'relay-limit' | 'failed';
 
 const failureOf = (message: string): HostActionFailure => {
   if (message === 'invalid-connect-link') return 'invalid-link';
   if (message === 'pairing-redeem-failed') return 'unreachable';
+  if (message === 'pairing-relay-limit') return 'relay-limit';
   return 'failed';
 };
 
